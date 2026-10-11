@@ -618,6 +618,15 @@
 | Master Profile Layout Orchestrator & Sticky Booking Consoles | `src/app/(website)/artist/[slug]/client.tsx` | ✅ | 2026-10-11 | Modernized canvas to `#faf8f7` alabaster, sticky quick-navigation bar (`Overview`, `Services`, `Portfolio`, `Availability`, `Reviews`), desktop sticky booking console with starting price & 4 trust badges, and mobile frosted glass bottom bar (`bg-white/95 backdrop-blur-xl`) with 44px+ touch targets; 0 TypeScript errors |
 | Cross-Device & Visual Polish Verification | `/artist/[slug]` | ✅ | 2026-10-11 | Verified live across desktop (1280x800) and mobile (390x844); verified typography, color tokens, lightbox interactions, and sticky consoles; 0 TypeScript errors and 0 console warnings |
 
+### 8.16 Modern Luxury Global Loader (`src/app/loading.tsx`)
+
+| Task | File(s) | Status | Date | Notes |
+|------|---------|--------|------|-------|
+| Modern Loader Animation Keyframes | `src/app/globals.css` | ✅ | 2026-10-12 | Added `@keyframes modern-loader-spin` (cubic-bezier 1.1s rotation) and `@keyframes modern-loader-pulse` (scale & opacity breath) for smooth 60fps GPU acceleration; 0 TypeScript errors |
+| Modern Luxury Orbital Loader Component | `src/app/loading.tsx` | ✅ | 2026-10-12 | Eliminated legacy pitch-black background (`bg-neutral-950`), replaced with pure, modern concentric orbital rings (delicate circular track, fast rose-gold gradient spinning arc, counter-rotating inner micro-orbit, and centered jewel pulse) on luxury Alabaster canvas; 0 TypeScript errors |
+| Visual Verification | Live Browser (`/loader-preview`) | ✅ | 2026-10-12 | Verified smooth 60fps rendering in browser; confirmed legacy dark screen eliminated; 0 TypeScript errors |
+
+
 
 
 
