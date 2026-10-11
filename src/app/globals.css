@@ -1,0 +1,184 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Brand Colors */
+    --color-primary: #eb7583;
+    --color-primary-light: #fcdadb;
+    --color-primary-soft: #fcf1ef;
+    --color-primary-hover: #d4616f;
+    --color-primary-active: #c24e5c;
+    --color-dark: #1e1a19;
+    --color-white: #ffffff;
+
+    /* Gray Scale */
+    --color-gray-50: #faf9f8;
+    --color-gray-100: #f5f3f2;
+    --color-gray-200: #e8e5e4;
+    --color-gray-300: #d1cdcc;
+    --color-gray-400: #a09b9a;
+    --color-gray-500: #6e6968;
+    --color-gray-600: #4a4544;
+    --color-gray-700: #332e2d;
+    --color-gray-800: #1e1a19;
+
+    /* Status Colors */
+    --color-success: #22c55e;
+    --color-success-light: #dcfce7;
+    --color-warning: #f59e0b;
+    --color-warning-light: #fef3c7;
+    --color-error: #ef4444;
+    --color-error-light: #fee2e2;
+    --color-info: #3b82f6;
+    --color-info-light: #dbeafe;
+
+    /* Typography */
+    --font-title: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
+    --font-body: var(--font-dm-sans), 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    /* Layout & Radii */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-body);
+    color: var(--color-dark);
+    background-color: var(--color-white);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-title);
+    color: var(--color-dark);
+    font-weight: 600;
+  }
+
+  /* Prevent iOS zoom on form inputs by ensuring 16px base font on mobile */
+  @media (max-width: 768px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Minimum 44px touch targets on mobile devices for interactive controls */
+  @media (max-width: 768px) {
+    button,
+    input[type="button"],
+    input[type="submit"],
+    [role="button"],
+    a[class*="btn"],
+    nav a {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+
+  /* Luxury Custom Scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(209, 205, 204, 0.6);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(160, 155, 154, 0.9);
+  }
+}
+
+/* Custom Component Utility Classes */
+.font-title {
+  font-family: var(--font-title);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.bg-primary-main {
+  background-color: var(--color-primary);
+}
+
+.text-primary-main {
+  color: var(--color-primary);
+}
+
+.border-primary-main {
+  border-color: var(--color-primary);
+}
+
+.bg-primary-light {
+  background-color: var(--color-primary-light);
+}
+
+.bg-primary-soft {
+  background-color: var(--color-primary-soft);
+}
+
+.text-brand-dark {
+  color: var(--color-dark);
+}
+
+.bg-brand-dark {
+  background-color: var(--color-dark);
+}
+
+/* Infinite Marquee Motion Keyframes */
+@keyframes marquee-left {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marquee-right {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+.animate-marquee-left {
+  display: flex;
+  width: max-content;
+  animation: marquee-left 42s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-right {
+  display: flex;
+  width: max-content;
+  animation: marquee-right 46s linear infinite;
+  will-change: transform;
+}
+
+.pause-on-hover:hover,
+.pause-on-hover:active {
+  animation-play-state: paused !important;
+}
+

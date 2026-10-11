@@ -1,0 +1,483 @@
+// ==============================================================================
+// GlamBook — Prisma Database Schema
+// PostgreSQL via Supabase (17 Tables per PRD_Backend.md)
+// ==============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ------------------------------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------------------------------
+
+enum UserRole {
+  USER
+  ARTIST
+  ADMIN
+}
+
+enum ArtistStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum PriceType {
+  FIXED
+  STARTING_FROM
+  RANGE
+  NEGOTIABLE
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  BOOKED
+  BLOCKED
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ContactStatus {
+  NEW
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+enum NotificationType {
+  BOOKING_NEW
+  BOOKING_ACCEPTED
+  BOOKING_REJECTED
+  ARTIST_APPROVED
+  ARTIST_REJECTED
+  REVIEW_RECEIVED
+  SYSTEM
+}
+
+enum SettingType {
+  TEXT
+  IMAGE
+  BOOLEAN
+  JSON
+}
+
+enum BannerPosition {
+  HOME_HERO
+  HOME_MIDDLE
+  FIND_ARTIST_TOP
+}
+
+// ------------------------------------------------------------------------------
+// 1. Users Table
+// ------------------------------------------------------------------------------
+model User {
+  id              String        @id @default(uuid())
+  email           String        @unique
+  name            String
+  username        String        @unique
+  phone           String?
+  avatarUrl       String?       @map("avatar_url")
+  locationCity    String?       @map("location_city")
+  locationState   String?       @map("location_state")
+  locationCountry String?       @default("India") @map("location_country")
+  latitude        Float?
+  longitude       Float?
+  role            UserRole      @default(USER)
+  isEmailVerified Boolean       @default(false) @map("is_email_verified")
+  isActive        Boolean       @default(true) @map("is_active")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relationships
+  artistProfile   ArtistProfile?
+  bookings        Booking[]     @relation("ClientBookings")
+  reviews         Review[]      @relation("UserReviews")
+  favorites       Favorite[]    @relation("UserFavorites")
+  notifications   Notification[]
+  blogPosts       BlogPost[]    @relation("AuthorBlogPosts")
+
+  @@index([role])
+  @@index([locationCity])
+  @@map("users")
+}
+
+// ------------------------------------------------------------------------------
+// 2. Categories Table
+// ------------------------------------------------------------------------------
+model Category {
+  id          String         @id @default(uuid())
+  name        String
+  slug        String         @unique
+  description String?
+  iconUrl     String?        @map("icon_url")
+  imageUrl    String?        @map("image_url")
+  sortOrder   Int            @default(0) @map("sort_order")
+  isActive    Boolean        @default(true) @map("is_active")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  // Relationships
+  subCategories   SubCategory[]
+  artistServices  ArtistService[]
+  portfolioItems  PortfolioItem[]
+
+  @@map("categories")
+}
+
+// ------------------------------------------------------------------------------
+// 3. Sub-Categories Table
+// ------------------------------------------------------------------------------
+model SubCategory {
+  id          String         @id @default(uuid())
+  categoryId  String         @map("category_id")
+  category    Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String         @unique
+  description String?
+  sortOrder   Int            @default(0) @map("sort_order")
+  isActive    Boolean        @default(true) @map("is_active")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  // Relationships
+  artistServices ArtistService[]
+
+  @@index([categoryId])
+  @@map("sub_categories")
+}
+
+// ------------------------------------------------------------------------------
+// 4. Artist Profiles Table
+// ------------------------------------------------------------------------------
+model ArtistProfile {
+  id               String                 @id @default(uuid())
+  userId           String                 @unique @map("user_id")
+  user             User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName     String?                @map("business_name")
+  bio              String?
+  experienceYears  Int                    @default(0) @map("experience_years")
+  serviceRadiusKm  Int                    @default(10) @map("service_radius_km")
+  status           ArtistStatus           @default(PENDING)
+  rejectionReason  String?                @map("rejection_reason")
+  avgRating        Float                  @default(0.0) @map("avg_rating")
+  totalReviews     Int                    @default(0) @map("total_reviews")
+  totalBookings    Int                    @default(0) @map("total_bookings")
+  profileViews     Int                    @default(0) @map("profile_views")
+  isFeatured       Boolean                @default(false) @map("is_featured")
+  approvedAt       DateTime?              @map("approved_at")
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @updatedAt @map("updated_at")
+
+  // Relationships
+  services         ArtistService[]
+  portfolioItems   PortfolioItem[]
+  availability     ArtistAvailability[]
+  workingHours     ArtistWorkingHours[]
+  bookings         Booking[]              @relation("ArtistBookings")
+  reviews          Review[]               @relation("ArtistReviews")
+  packages         Package[]
+  favorites        Favorite[]             @relation("ArtistFavorites")
+
+  @@index([status])
+  @@index([isFeatured])
+  @@map("artist_profiles")
+}
+
+// ------------------------------------------------------------------------------
+// 5. Artist Services Table
+// ------------------------------------------------------------------------------
+model ArtistService {
+  id              String         @id @default(uuid())
+  artistId        String         @map("artist_id")
+  artist          ArtistProfile  @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  categoryId      String         @map("category_id")
+  category        Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subCategoryId   String?        @map("sub_category_id")
+  subCategory     SubCategory?   @relation(fields: [subCategoryId], references: [id], onDelete: SetNull)
+  priceFrom       Float          @map("price_from")
+  priceTo         Float?         @map("price_to")
+  priceType       PriceType      @default(STARTING_FROM) @map("price_type")
+  description     String?
+  durationMinutes Int?           @map("duration_minutes")
+  isActive        Boolean        @default(true) @map("is_active")
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  // Relationships
+  bookings        Booking[]
+
+  @@index([artistId])
+  @@index([categoryId, subCategoryId])
+  @@map("artist_services")
+}
+
+// ------------------------------------------------------------------------------
+// 6. Portfolio Items Table
+// ------------------------------------------------------------------------------
+model PortfolioItem {
+  id           String         @id @default(uuid())
+  artistId     String         @map("artist_id")
+  artist       ArtistProfile  @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  mediaUrl     String         @map("media_url")
+  thumbnailUrl String?        @map("thumbnail_url")
+  mediaType    MediaType      @default(IMAGE) @map("media_type")
+  title        String?
+  description  String?
+  categoryId   String?        @map("category_id")
+  category     Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  sortOrder    Int            @default(0) @map("sort_order")
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  @@index([artistId, sortOrder])
+  @@map("portfolio_items")
+}
+
+// ------------------------------------------------------------------------------
+// 7. Artist Availability Table
+// ------------------------------------------------------------------------------
+model ArtistAvailability {
+  id        String             @id @default(uuid())
+  artistId  String             @map("artist_id")
+  artist    ArtistProfile      @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  date      DateTime
+  status    AvailabilityStatus @default(BLOCKED)
+  startTime String?            @map("start_time")
+  endTime   String?            @map("end_time")
+  note      String?
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  @@unique([artistId, date])
+  @@index([artistId, date])
+  @@map("artist_availability")
+}
+
+// ------------------------------------------------------------------------------
+// 8. Artist Working Hours Table
+// ------------------------------------------------------------------------------
+model ArtistWorkingHours {
+  id        String        @id @default(uuid())
+  artistId  String        @map("artist_id")
+  artist    ArtistProfile @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  dayOfWeek Int           @map("day_of_week") // 0 = Sunday, 6 = Saturday
+  isWorking Boolean       @default(true) @map("is_working")
+  startTime String        @default("09:00") @map("start_time")
+  endTime   String        @default("18:00") @map("end_time")
+
+  @@unique([artistId, dayOfWeek])
+  @@map("artist_working_hours")
+}
+
+// ------------------------------------------------------------------------------
+// 9. Bookings Table (Lead Privacy: userPhone & userEmail protected for Admin only)
+// ------------------------------------------------------------------------------
+model Booking {
+  id              String         @id @default(uuid())
+  bookingNumber   String         @unique @map("booking_number")
+  userId          String         @map("user_id")
+  user            User           @relation("ClientBookings", fields: [userId], references: [id], onDelete: Cascade)
+  artistId        String         @map("artist_id")
+  artist          ArtistProfile  @relation("ArtistBookings", fields: [artistId], references: [id], onDelete: Cascade)
+  serviceId       String?        @map("service_id")
+  service         ArtistService? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  bookingDate     DateTime       @map("booking_date")
+  bookingTime     String?        @map("booking_time")
+  eventType       String?        @map("event_type")
+  eventLocation   String?        @map("event_location")
+  requirements    String?
+  numberOfPeople  Int            @default(1) @map("number_of_people")
+  status          BookingStatus  @default(PENDING)
+  rejectionReason String?        @map("rejection_reason")
+  adminNotes      String?        @map("admin_notes")
+
+  // Client Details (Admin sees full; Artist sees userName only)
+  userName        String         @map("user_name")
+  userPhone       String?        @map("user_phone")
+  userEmail       String?        @map("user_email")
+
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  // Relationships
+  review          Review?
+
+  @@index([userId, status])
+  @@index([artistId, status])
+  @@index([bookingDate])
+  @@map("bookings")
+}
+
+// ------------------------------------------------------------------------------
+// 10. Reviews Table
+// ------------------------------------------------------------------------------
+model Review {
+  id           String        @id @default(uuid())
+  bookingId    String        @unique @map("booking_id")
+  booking      Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId       String        @map("user_id")
+  user         User          @relation("UserReviews", fields: [userId], references: [id], onDelete: Cascade)
+  artistId     String        @map("artist_id")
+  artist       ArtistProfile @relation("ArtistReviews", fields: [artistId], references: [id], onDelete: Cascade)
+  rating       Int           // 1 to 5
+  comment      String?
+  photos       Json?
+  isApproved   Boolean       @default(true) @map("is_approved")
+  artistReply  String?       @map("artist_reply")
+  artistReplyAt DateTime?    @map("artist_reply_at")
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  @@index([artistId, createdAt])
+  @@map("reviews")
+}
+
+// ------------------------------------------------------------------------------
+// 11. Packages Table
+// ------------------------------------------------------------------------------
+model Package {
+  id               String        @id @default(uuid())
+  artistId         String        @map("artist_id")
+  artist           ArtistProfile @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  name             String
+  description      String
+  price            Float
+  durationHours    Float?        @map("duration_hours")
+  includedServices Json          @map("included_services")
+  imageUrl         String?       @map("image_url")
+  isActive         Boolean       @default(true) @map("is_active")
+  sortOrder        Int           @default(0) @map("sort_order")
+  createdAt        DateTime      @default(now()) @map("created_at")
+
+  @@index([artistId, isActive])
+  @@map("packages")
+}
+
+// ------------------------------------------------------------------------------
+// 12. Favorites Table
+// ------------------------------------------------------------------------------
+model Favorite {
+  id        String        @id @default(uuid())
+  userId    String        @map("user_id")
+  user      User          @relation("UserFavorites", fields: [userId], references: [id], onDelete: Cascade)
+  artistId  String        @map("artist_id")
+  artist    ArtistProfile @relation("ArtistFavorites", fields: [artistId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@unique([userId, artistId])
+  @@map("favorites")
+}
+
+// ------------------------------------------------------------------------------
+// 13. Blog Posts Table
+// ------------------------------------------------------------------------------
+model BlogPost {
+  id              String         @id @default(uuid())
+  authorId        String         @map("author_id")
+  author          User           @relation("AuthorBlogPosts", fields: [authorId], references: [id], onDelete: Restrict)
+  title           String
+  slug            String         @unique
+  excerpt         String?
+  content         String
+  coverImageUrl   String?        @map("cover_image_url")
+  category        String?
+  tags            Json?
+  status          BlogPostStatus @default(DRAFT)
+  metaTitle       String?        @map("meta_title")
+  metaDescription String?        @map("meta_description")
+  viewsCount      Int            @default(0) @map("views_count")
+  publishedAt     DateTime?      @map("published_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  @@index([status, publishedAt])
+  @@map("blog_posts")
+}
+
+// ------------------------------------------------------------------------------
+// 14. Contact Submissions Table
+// ------------------------------------------------------------------------------
+model ContactSubmission {
+  id         String        @id @default(uuid())
+  name       String
+  email      String
+  phone      String?
+  subject    String
+  message    String
+  status     ContactStatus @default(NEW)
+  adminNotes String?       @map("admin_notes")
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  @@map("contact_submissions")
+}
+
+// ------------------------------------------------------------------------------
+// 15. Notifications Table
+// ------------------------------------------------------------------------------
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id")
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// ------------------------------------------------------------------------------
+// 16. Site Settings Table
+// ------------------------------------------------------------------------------
+model SiteSetting {
+  id        String      @id @default(uuid())
+  key       String      @unique
+  value     String
+  type      SettingType @default(TEXT)
+  group     String      @default("general")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  @@map("site_settings")
+}
+
+// ------------------------------------------------------------------------------
+// 17. Banners Table
+// ------------------------------------------------------------------------------
+model Banner {
+  id        String         @id @default(uuid())
+  title     String?
+  subtitle  String?
+  imageUrl  String         @map("image_url")
+  linkUrl   String?        @map("link_url")
+  position  BannerPosition @default(HOME_HERO)
+  sortOrder Int            @default(0) @map("sort_order")
+  isActive  Boolean        @default(true) @map("is_active")
+  startsAt  DateTime?      @map("starts_at")
+  endsAt    DateTime?      @map("ends_at")
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  @@index([position, isActive])
+  @@map("banners")
+}

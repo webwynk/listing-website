@@ -1,0 +1,33 @@
+name: Supabase Database Keep-Alive
+
+on:
+  schedule:
+    # Run every 3 days at 04:00 UTC to reset Supabase 7-day inactivity countdown
+    - cron: '0 4 */3 * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+jobs:
+  keep-alive:
+    name: Ping Supabase Database
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Application Keep-Alive Endpoint
+        env:
+          APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'https://glambook.in' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          echo "Pinging ${APP_URL}/api/cron/keep-alive..."
+          if [ -n "$CRON_SECRET" ]; then
+            RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -H "Authorization: Bearer $CRON_SECRET" "${APP_URL}/api/cron/keep-alive")
+          else
+            RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" "${APP_URL}/api/cron/keep-alive")
+          fi
+          
+          echo "$RESPONSE"
+          STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d: -f2)
+          
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 300 ]; then
+            echo "✅ Supabase database keep-alive ping succeeded with status $STATUS"
+          else
+            echo "⚠️ Ping returned status $STATUS (Ensure NEXT_PUBLIC_APP_URL secret is set)"
+          fi
